@@ -16,6 +16,10 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+
 // An example struct for Game Objects.
 // You are encouraged to customize this as you see fit.
 struct GameObject {
@@ -38,7 +42,7 @@ struct GameObject {
 	// Alternatively, you could represent rotation via a normalized heading vec:
 	// glm::vec3 heading;
 	float scale; // Or, alternatively, a glm::vec2 scale;
-	glm::mat4 transformationMatrix;
+	glm::mat3 transformationMatrix;
 };
 
 // EXAMPLE CALLBACKS
@@ -53,33 +57,31 @@ public:
 		}
 	}
 
+	virtual void mouseButtonCallBack(int button, int action, int mods) {
+		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+			std::cout << "Left mouse button has been pressed" << std::endl;
+		}
+
+		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+			std::cout << "Left mouse button has been released" << std::endl;
+		}
+	}
+
 private:
 	ShaderProgram& shader;
 };
 
-CPU_Geometry shipGeom(float width, float height) {
+CPU_Geometry gameObjectGeom(float width, float height) {
 	float halfWidth = width / 2.0f;
 	float halfHeight = height / 2.0f;
 	CPU_Geometry retGeom;
 	// vertices for the spaceship quad
-	retGeom.verts.push_back(glm::vec3(-halfWidth, halfHeight, 0.f));
-	retGeom.verts.push_back(glm::vec3(-halfWidth, -halfHeight, 0.f));
-	retGeom.verts.push_back(glm::vec3(halfWidth, -halfHeight, 0.f));
-	retGeom.verts.push_back(glm::vec3(-halfWidth, halfHeight, 0.f));
-	retGeom.verts.push_back(glm::vec3(halfWidth, -halfHeight, 0.f));
-	retGeom.verts.push_back(glm::vec3(halfWidth, halfHeight, 0.f));
-
-	// For full marks (Part IV), you'll need to use the following vertex coordinates instead.
-	// Then, you'd get the correct scale/translation/rotation by passing in uniforms into
-	// the vertex shader.
-	/*
-	retGeom.verts.push_back(glm::vec3(-1.f, 1.f, 0.f));
-	retGeom.verts.push_back(glm::vec3(-1.f, -1.f, 0.f));
-	retGeom.verts.push_back(glm::vec3(1.f, -1.f, 0.f));
-	retGeom.verts.push_back(glm::vec3(-1.f, 1.f, 0.f));
-	retGeom.verts.push_back(glm::vec3(1.f, -1.f, 0.f));
-	retGeom.verts.push_back(glm::vec3(1.f, 1.f, 0.f));
-	*/
+	retGeom.verts.push_back(glm::vec3(-halfWidth, halfHeight, 1.f));
+	retGeom.verts.push_back(glm::vec3(-halfWidth, -halfHeight, 1.f));
+	retGeom.verts.push_back(glm::vec3(halfWidth, -halfHeight, 1.f));
+	retGeom.verts.push_back(glm::vec3(-halfWidth, halfHeight, 1.f));
+	retGeom.verts.push_back(glm::vec3(halfWidth, -halfHeight, 1.f));
+	retGeom.verts.push_back(glm::vec3(halfWidth, halfHeight, 1.f));
 
 	// texture coordinates
 	retGeom.texCoords.push_back(glm::vec2(0.f, 1.f));
@@ -93,6 +95,7 @@ CPU_Geometry shipGeom(float width, float height) {
 
 // END EXAMPLES
 
+					
 int main() {
 	Log::debug("Starting main");
 
@@ -112,12 +115,25 @@ int main() {
 	// GL_NEAREST looks a bit better for low-res pixel art than GL_LINEAR.
 	// But for most other cases, you'd want GL_LINEAR interpolation.
 	GameObject ship("textures/ship.png", GL_NEAREST);
+	GameObject diamond("textures/diamond.png", GL_NEAREST);
 
-	ship.cgeom = shipGeom(0.18f, 0.12f);
 
+
+	ship.cgeom = gameObjectGeom(0.18f, 0.12f);
+	diamond.cgeom = gameObjectGeom(0.10f, 0.10f);
+
+	for (int vert = 0; vert < ship.cgeom.verts.size(); vert++) {
+		ship.cgeom.verts[vert] = ship.transformationMatrix * ship.cgeom.verts[vert];
+	}
 
 	ship.ggeom.setVerts(ship.cgeom.verts);
 	ship.ggeom.setTexCoords(ship.cgeom.texCoords);
+	diamond.ggeom.setVerts(diamond.cgeom.verts);
+	diamond.ggeom.setTexCoords(diamond.cgeom.texCoords);
+
+
+
+
 
 	// RENDER LOOP
 	while (!window.shouldClose()) {
@@ -132,7 +148,15 @@ int main() {
 		ship.texture.bind();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		ship.texture.unbind();
+
+		diamond.ggeom.bind();
+		diamond.texture.bind();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		diamond.texture.unbind();
+
 		glDisable(GL_FRAMEBUFFER_SRGB); // disable sRGB for things like imgui
+
+
 
 		// Starting the new ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();

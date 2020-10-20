@@ -19,6 +19,9 @@
 struct CPU_Geometry {
 	std::vector<glm::vec3> verts;
 	std::vector<glm::vec2> texCoords;
+
+	// Initializes as identity matrix
+	glm::mat3 transform = glm::mat3(1.0);
 };
 
 
